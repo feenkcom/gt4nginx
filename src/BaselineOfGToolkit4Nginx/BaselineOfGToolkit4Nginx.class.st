@@ -10,5 +10,7 @@ BaselineOfGToolkit4Nginx >> baseline: spec [
 	spec
 		for: #common do: [
 			spec
+				baseline: 'OSSubprocess' with: [
+					spec repository: 'github://pharo-contributions/OSSubprocess/repository' ];
 				package: 'GToolkit-Nginx' ]
 ]
