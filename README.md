@@ -4,7 +4,7 @@
 ```
 Metacello new
 	baseline: 'GToolkit4Nginx';
-	repository: 'github://feenkcom/gtoolkit/src';
+	repository: 'github://feenkcom/gt4nginx/src';
 	load.
  ```
  
