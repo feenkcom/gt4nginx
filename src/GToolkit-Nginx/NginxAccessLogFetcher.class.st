@@ -20,6 +20,11 @@ NginxAccessLogFetcher >> accesLogLineParser [
 ]
 
 { #category : #accessing }
+NginxAccessLogFetcher >> allAccesses [
+	^ (self accesLogLineParser parse: log) collect: [:each | NginxAccess new datetime: each fourth; accessedURL: each fifth third]
+]
+
+{ #category : #accessing }
 NginxAccessLogFetcher >> dateParser [
 	|dateParser|
 	dateParser := ($[ asPParser,
@@ -51,7 +56,6 @@ OSSUnixSubprocess new
 		log := outString.
 	].
 	^ log
-	"^ self accesLogLineParser parse: log"
 ]
 
 { #category : #accessing }
