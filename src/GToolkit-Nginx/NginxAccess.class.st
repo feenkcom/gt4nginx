@@ -9,6 +9,11 @@ Class {
 }
 
 { #category : #accessing }
+NginxAccess >> accessedURL [
+	^ accessedURL
+]
+
+{ #category : #accessing }
 NginxAccess >> accessedURL: aUrlString [
 	accessedURL := aUrlString
 ]
@@ -30,6 +35,11 @@ NginxAccess >> dateParser [
 		#digit asPParser plus flatten token,
 		' +0000]' asPParser).
 	^ dateParser
+]
+
+{ #category : #accessing }
+NginxAccess >> datetime [
+	^ datetime
 ]
 
 { #category : #accessing }

@@ -68,6 +68,20 @@ NginxAccessLogFetcher >> getParser [
 ]
 
 { #category : #accessing }
+NginxAccessLogFetcher >> gtAllAccessesFor: aView [
+	<gtView>
+	|allAccesses|
+	allAccesses := self allAccesses.
+	allAccesses ifNil: [ ^ aView empty ].
+	^ aView columnedList
+		title: 'All Accesses';
+		priority: 3;
+		items: [ allAccesses ];
+		column: 'Time' item: [ :eachItem :eachIndex | eachItem datetime asRopedText foreground: Color gray ] width: 240;
+		column: 'Access' item: [ :eachItem :eachIndex | eachItem ] format: [ :eachItem | eachItem accessedURL ]
+]
+
+{ #category : #accessing }
 NginxAccessLogFetcher >> ipParser [
 	^(#startOfLine asPParser, #digit asPParser plus flatten, (($. asPParser,#digit asPParser plus)) plus flatten ) flatten
 ]
