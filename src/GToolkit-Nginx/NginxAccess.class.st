@@ -53,6 +53,6 @@ NginxAccess >> datetime: aDatetimeString [
 			h  := (tokens at: 8) value.
 			min := (tokens at: 10) value.
 			sec  := (tokens at: 12) value.
-			datetime := DateAndTime year: day asInteger month: m day: day asInteger hour: h asInteger minute: min asInteger second: sec asInteger.]
+			datetime := DateAndTime year: year asInteger month: m day: day asInteger hour: h asInteger minute: min asInteger second: sec asInteger.]
 			) parse: datetimesstring .
 ]

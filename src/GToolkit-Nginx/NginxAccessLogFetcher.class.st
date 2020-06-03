@@ -82,8 +82,27 @@ NginxAccessLogFetcher >> gtAllAccessesFor: aView [
 ]
 
 { #category : #accessing }
+NginxAccessLogFetcher >> gtZipAccessesFor: aView [
+	<gtView>
+	|allAccesses|
+	allAccesses := self nonRootAccesses.
+	allAccesses ifNil: [ ^ aView empty ].
+	^ aView columnedList
+		title: 'Zip Accesses';
+		priority: 3;
+		items: [ allAccesses ];
+		column: 'Time' item: [ :eachItem :eachIndex | eachItem datetime asRopedText foreground: Color gray ] width: 240;
+		column: 'Access' item: [ :eachItem :eachIndex | eachItem ] format: [ :eachItem | eachItem accessedURL ]
+]
+
+{ #category : #accessing }
 NginxAccessLogFetcher >> ipParser [
 	^(#startOfLine asPParser, #digit asPParser plus flatten, (($. asPParser,#digit asPParser plus)) plus flatten ) flatten
+]
+
+{ #category : #accessing }
+NginxAccessLogFetcher >> nonRootAccesses [
+	^ self allAccesses select: [: each | each accessedURL endsWith:'zip']
 ]
 
 { #category : #accessing }
