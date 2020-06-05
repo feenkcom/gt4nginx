@@ -3,7 +3,9 @@ Class {
 	#superclass : #Object,
 	#instVars : [
 		'accessedURL',
-		'datetime'
+		'datetime',
+		'channel',
+		'agent'
 	],
 	#category : #'GToolkit-Nginx-GToolkit-Nginx'
 }
@@ -16,6 +18,26 @@ NginxAccess >> accessedURL [
 { #category : #accessing }
 NginxAccess >> accessedURL: aUrlString [
 	accessedURL := aUrlString
+]
+
+{ #category : #accessing }
+NginxAccess >> agent [
+	^ agent
+]
+
+{ #category : #accessing }
+NginxAccess >> agent: aString [
+	agent := aString
+]
+
+{ #category : #accessing }
+NginxAccess >> channel [
+	^ channel
+]
+
+{ #category : #accessing }
+NginxAccess >> channel: aString [
+	channel := aString
 ]
 
 { #category : #accessing }

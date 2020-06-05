@@ -15,13 +15,42 @@ NginxAccessLogFetcher >> accesLogLineParser [
   (' ' asPParser, '- ' asPParser plus) flatten,
   self dateParser,
   self getParser,
-   String lf asPParser negate star flatten,
+  ' ' asPParser,
+  self responseCodeParser,
+  ' ' asPParser,
+  self responseTimeParser,
+  ' ' asPParser,
+  self channelParser,
+  ' ' asPParser,
+  self agentParser,
+
  String lf asPParser) star
 ]
 
 { #category : #accessing }
+NginxAccessLogFetcher >> agentParser [
+^ ( '"' asPParser,
+	'"' asPParser negate plus flatten,
+	'"' asPParser
+	)
+]
+
+{ #category : #accessing }
 NginxAccessLogFetcher >> allAccesses [
-	^ (self accesLogLineParser parse: log) collect: [:each | NginxAccess new datetime: each fourth; accessedURL: each fifth third]
+	^ (self accesLogLineParser parse: log) collect: 
+		[:each | NginxAccess new 
+			datetime: each fourth;
+			accessedURL: each fifth third;
+			channel: (each at: 11) second;
+			agent: (each at: 13) second]
+]
+
+{ #category : #accessing }
+NginxAccessLogFetcher >> channelParser [
+	^ ( '"' asPParser,
+	'"' asPParser negate plus flatten,
+	'"' asPParser
+	)
 ]
 
 { #category : #accessing }
@@ -64,7 +93,8 @@ NginxAccessLogFetcher >> getParser [
 	 (' "HEAD ' asPParser) optional,
 	' ' asPParser negate plus flatten,
 	' ' asPParser,
-	'HTTP/1.1"' asPParser) 
+	('HTTP/1.1"' asPParser) optional,
+	('HTTP/1.0"' asPParser) optional) 
 ]
 
 { #category : #accessing }
@@ -77,8 +107,10 @@ NginxAccessLogFetcher >> gtAllAccessesFor: aView [
 		title: 'All Accesses';
 		priority: 3;
 		items: [ allAccesses ];
-		column: 'Time' item: [ :eachItem :eachIndex | eachItem datetime asRopedText foreground: Color gray ] width: 240;
-		column: 'Access' item: [ :eachItem :eachIndex | eachItem ] format: [ :eachItem | eachItem accessedURL ]
+		column: 'Time' item: [ :eachItem :eachIndex | eachItem datetime asRopedText foreground: Color gray ] width: 180;
+		column: 'Access' item: [ :eachItem :eachIndex | eachItem ] format: [ :eachItem | eachItem accessedURL  ];
+		column: 'Channel' item: [ :eachItem :eachIndex | eachItem ] format: [ :eachItem | eachItem channel ];
+		column: 'Agent' item: [ :eachItem :eachIndex | eachItem ] format: [ :eachItem | eachItem agent ]
 ]
 
 { #category : #accessing }
@@ -92,7 +124,10 @@ NginxAccessLogFetcher >> gtZipAccessesFor: aView [
 		priority: 3;
 		items: [ allAccesses ];
 		column: 'Time' item: [ :eachItem :eachIndex | eachItem datetime asRopedText foreground: Color gray ] width: 240;
-		column: 'Access' item: [ :eachItem :eachIndex | eachItem ] format: [ :eachItem | eachItem accessedURL ]
+		column: 'Access' item: [ :eachItem :eachIndex | eachItem ] format: [ :eachItem | eachItem accessedURL ];
+		column: 'Agent' item: [ :eachItem :eachIndex | eachItem ] format: [ :eachItem | eachItem agent ];
+				column: 'Channel' item: [ :eachItem :eachIndex | eachItem ] format: [ :eachItem | eachItem channel ]
+
 ]
 
 { #category : #accessing }
@@ -103,6 +138,16 @@ NginxAccessLogFetcher >> ipParser [
 { #category : #accessing }
 NginxAccessLogFetcher >> nonRootAccesses [
 	^ self allAccesses select: [: each | each accessedURL endsWith:'zip']
+]
+
+{ #category : #accessing }
+NginxAccessLogFetcher >> responseCodeParser [
+	^ #digit asPParser plus flatten
+]
+
+{ #category : #accessing }
+NginxAccessLogFetcher >> responseTimeParser [
+	^ #digit asPParser plus flatten
 ]
 
 { #category : #accessing }
