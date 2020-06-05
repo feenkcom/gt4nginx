@@ -12,7 +12,7 @@ Class {
 NginxAccessLogFetcher >> accesLogLineParser [
 	^ (#startOfLine asPParser,
   self ipParser,
-  (' ' asPParser, '- ' asPParser plus) flatten,
+  (' ' asPParser, '- ' asPParser, ' ' asPParser negate plus, ' ' asPParser ) flatten,
   self dateParser,
   self getParser,
   ' ' asPParser,
@@ -40,7 +40,7 @@ NginxAccessLogFetcher >> allAccesses [
 	^ (self accesLogLineParser parse: log) collect: 
 		[:each | NginxAccess new 
 			datetime: each fourth;
-			accessedURL: each fifth third;
+			accessedURL: each fifth second;
 			channel: (each at: 11) second;
 			agent: (each at: 13) second]
 ]
@@ -89,12 +89,11 @@ OSSUnixSubprocess new
 
 { #category : #accessing }
 NginxAccessLogFetcher >> getParser [
-	^((' "GET ' asPParser) optional,
-	 (' "HEAD ' asPParser) optional,
-	' ' asPParser negate plus flatten,
-	' ' asPParser,
-	('HTTP/1.1"' asPParser) optional,
-	('HTTP/1.0"' asPParser) optional) 
+	^((' "GET ' asPParser) | (' "POST ' asPParser)  |  (' "HEAD ' asPParser) | (' "PATCH ' asPParser),
+	  ' ' asPParser negate plus flatten,
+	  ' ' asPParser,
+	  ('HTTP/1.1"' asPParser) optional,
+	  ('HTTP/1.0"' asPParser) optional) 
 ]
 
 { #category : #accessing }
@@ -123,7 +122,7 @@ NginxAccessLogFetcher >> gtZipAccessesFor: aView [
 		title: 'Zip Accesses';
 		priority: 3;
 		items: [ allAccesses ];
-		column: 'Time' item: [ :eachItem :eachIndex | eachItem datetime asRopedText foreground: Color gray ] width: 240;
+		column: 'Time' item: [ :eachItem :eachIndex | eachItem datetime asRopedText foreground: Color gray ] width: 170;
 		column: 'Access' item: [ :eachItem :eachIndex | eachItem ] format: [ :eachItem | eachItem accessedURL ];
 		column: 'Agent' item: [ :eachItem :eachIndex | eachItem ] format: [ :eachItem | eachItem agent ];
 				column: 'Channel' item: [ :eachItem :eachIndex | eachItem ] format: [ :eachItem | eachItem channel ]
