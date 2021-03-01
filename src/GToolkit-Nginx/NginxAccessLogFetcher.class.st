@@ -65,6 +65,13 @@ NginxAccessLogFetcher >> allGtZipDownloads [
 ]
 
 { #category : #accessing }
+NginxAccessLogFetcher >> allXdocDownloads [
+	| accesses |
+	accesses := self allAccesses select: [: each | (each accessedURL findString: '.xdoc') > 0].
+	^ accesses
+]
+
+{ #category : #accessing }
 NginxAccessLogFetcher >> channelParser [
 	^ ( '"' asPParser,
 	'"' asPParser negate plus flatten,
@@ -154,13 +161,39 @@ NginxAccessLogFetcher >> gtAllAccessesFor: aView [
 ]
 
 { #category : #accessing }
-NginxAccessLogFetcher >> gtZipAccessesFor: aView [
+NginxAccessLogFetcher >> gtGtAccessesFor: aView [
 	<gtView>
 	| accesses |
 	accesses := self allGtZipDownloads.
 	accesses ifNil: [ ^ aView empty ].
 	^ aView columnedList
 		title: 'GT Accesses';
+		priority: 3;
+		items: [ accesses ];
+		column: 'Time'
+			item:
+				[ :eachItem :eachIndex | eachItem datetime asRopedText foreground: Color gray ]
+			width: 170;
+		column: 'Access'
+			item: [ :eachItem :eachIndex | eachItem ]
+			text: [ :eachItem | eachItem accessedURL ];
+			
+		column: 'Agent'
+			item: [ :eachItem :eachIndex | eachItem ]
+			text: [ :eachItem | eachItem agent ] width: 100;
+		column: 'Channel'
+			item: [ :eachItem :eachIndex | eachItem ]
+			text: [ :eachItem | eachItem channel ] width: 100
+]
+
+{ #category : #accessing }
+NginxAccessLogFetcher >> gtXdocAccessesFor: aView [
+	<gtView>
+	| accesses |
+	accesses := self allXdocDownloads.
+	accesses ifNil: [ ^ aView empty ].
+	^ aView columnedList
+		title: 'Xdoc Accesses';
 		priority: 3;
 		items: [ accesses ];
 		column: 'Time'
