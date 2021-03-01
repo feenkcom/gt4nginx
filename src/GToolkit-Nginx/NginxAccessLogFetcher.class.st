@@ -57,6 +57,14 @@ NginxAccessLogFetcher >> allAccesses: anArray [
 ]
 
 { #category : #accessing }
+NginxAccessLogFetcher >> allGtZipDownloads [
+	| accesses |
+	accesses := self allAccesses select: [: each | (each accessedURL findString: '/gt/') > 0].
+	accesses := accesses select: [: each | (each accessedURL findString: '.zip') > 0].
+	^ accesses
+]
+
+{ #category : #accessing }
 NginxAccessLogFetcher >> channelParser [
 	^ ( '"' asPParser,
 	'"' asPParser negate plus flatten,
@@ -149,10 +157,10 @@ NginxAccessLogFetcher >> gtAllAccessesFor: aView [
 NginxAccessLogFetcher >> gtZipAccessesFor: aView [
 	<gtView>
 	| accesses |
-	accesses := self nonRootAccesses.
+	accesses := self allGtZipDownloads.
 	accesses ifNil: [ ^ aView empty ].
 	^ aView columnedList
-		title: 'Zip Accesses';
+		title: 'GT Accesses';
 		priority: 3;
 		items: [ accesses ];
 		column: 'Time'
@@ -162,12 +170,13 @@ NginxAccessLogFetcher >> gtZipAccessesFor: aView [
 		column: 'Access'
 			item: [ :eachItem :eachIndex | eachItem ]
 			text: [ :eachItem | eachItem accessedURL ];
+			
 		column: 'Agent'
 			item: [ :eachItem :eachIndex | eachItem ]
-			text: [ :eachItem | eachItem agent ];
+			text: [ :eachItem | eachItem agent ] width: 100;
 		column: 'Channel'
 			item: [ :eachItem :eachIndex | eachItem ]
-			text: [ :eachItem | eachItem channel ]
+			text: [ :eachItem | eachItem channel ] width: 100
 ]
 
 { #category : #accessing }
@@ -182,7 +191,7 @@ NginxAccessLogFetcher >> log [
 
 { #category : #accessing }
 NginxAccessLogFetcher >> nonRootAccesses [
-	^ self allAccesses select: [: each | (each accessedURL findString: 'zip') > 0]
+	^ self allAccesses select: [: each | (each accessedURL findString: '/gt/') > 0]
 ]
 
 { #category : #accessing }
