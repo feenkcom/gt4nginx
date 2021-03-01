@@ -149,6 +149,9 @@ NginxAccessLogFetcher >> gtAllAccessesFor: aView [
 			item:
 				[ :eachItem :eachIndex | eachItem datetime asRopedText foreground: Color gray ]
 			width: 180;
+		column: 'IP'
+			item: [ :eachItem :eachIndex | eachItem ]
+			text: [ :eachItem | eachItem ip ];
 		column: 'Access'
 			item: [ :eachItem :eachIndex | eachItem ]
 			text: [ :eachItem | eachItem accessedURL ];
@@ -190,7 +193,7 @@ NginxAccessLogFetcher >> gtGtAccessesFor: aView [
 NginxAccessLogFetcher >> gtXdocAccessesFor: aView [
 	<gtView>
 	| accesses |
-	accesses := self allXdocDownloads.
+	accesses := self allXdocDownloads collect: [:a| a parsedForce].
 	accesses ifNil: [ ^ aView empty ].
 	^ aView columnedList
 		title: 'Xdoc Accesses';
@@ -203,7 +206,9 @@ NginxAccessLogFetcher >> gtXdocAccessesFor: aView [
 		column: 'Access'
 			item: [ :eachItem :eachIndex | eachItem ]
 			text: [ :eachItem | eachItem accessedURL ];
-			
+		column: 'IP'
+			item: [ :eachItem :eachIndex | eachItem ]
+			text: [ :eachItem | eachItem ip ] width: 100;	
 		column: 'Agent'
 			item: [ :eachItem :eachIndex | eachItem ]
 			text: [ :eachItem | eachItem agent ] width: 100;
