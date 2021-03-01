@@ -5,7 +5,9 @@ Class {
 		'accessedURL',
 		'datetime',
 		'channel',
-		'agent'
+		'agent',
+		'log',
+		'parser'
 	],
 	#category : #'GToolkit-Nginx-GToolkit-Nginx'
 }
@@ -77,4 +79,30 @@ NginxAccess >> datetime: aDatetimeString [
 			sec  := (tokens at: 12) value.
 			datetime := DateAndTime year: year asInteger month: m day: day asInteger hour: h asInteger minute: min asInteger second: sec asInteger.]
 			) parse: datetimesstring .
+]
+
+{ #category : #accessing }
+NginxAccess >> log [
+	^ log
+]
+
+{ #category : #accessing }
+NginxAccess >> log: aLogEntry [
+	log := aLogEntry
+]
+
+{ #category : #accessing }
+NginxAccess >> parsed [
+	|array|
+	self datetime ifNil: [
+		array := parser parse: log.
+		self datetime: array fourth.
+		self accessedURL: array fifth second.
+		self channel: (array at: 11) second.
+		self agent: (array at: 13)].
+]
+
+{ #category : #accessing }
+NginxAccess >> parser: aParser [
+	parser := aParser
 ]

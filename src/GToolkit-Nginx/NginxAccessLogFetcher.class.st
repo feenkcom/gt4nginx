@@ -3,7 +3,8 @@ Class {
 	#superclass : #Object,
 	#instVars : [
 		'sshServer',
-		'log'
+		'log',
+		'allAccesses'
 	],
 	#category : #'GToolkit-Nginx'
 }
@@ -38,16 +39,21 @@ NginxAccessLogFetcher >> agentParser [
 { #category : #accessing }
 NginxAccessLogFetcher >> allAccesses [
 	| parser |
-	parser := self accesLogLineParser.
-	^ (self  log lines collect: [:l | parser parse: (l,String lf)]) 
-		collect: 
-		[:each | NginxAccess new 
-			datetime: each fourth;
-			accessedURL: each fifth second;
-			channel: (each at: 11) second;
-			agent: (each at: 13) second]
-	"^ (self log lines select: [:l | (parser parse: (l,String lf)) isArray not]) "
-		"select: [:each | each isArray not]"
+	allAccesses ifNil: [
+		self fetchAccessLog.
+		parser := self accesLogLineParser.
+		allAccesses := (self  log lines collect: [:l | 
+			NginxAccess new 
+				parser: parser;
+				log: (l,String lf);
+				parsed
+				])].
+	^ allAccesses
+]
+
+{ #category : #accessing }
+NginxAccessLogFetcher >> allAccesses: anArray [
+	allAccesses := anArray
 ]
 
 { #category : #accessing }
@@ -117,9 +123,9 @@ NginxAccessLogFetcher >> getParser [
 { #category : #accessing }
 NginxAccessLogFetcher >> gtAllAccessesFor: aView [
 	<gtView>
-	| allAccesses |
-	allAccesses := self allAccesses.
-	allAccesses ifNil: [ ^ aView empty ].
+	| accesses |
+	accesses := self allAccesses.
+	accesses ifNil: [ ^ aView empty ].
 	^ aView columnedList
 		title: 'All Accesses';
 		priority: 3;
@@ -142,13 +148,13 @@ NginxAccessLogFetcher >> gtAllAccessesFor: aView [
 { #category : #accessing }
 NginxAccessLogFetcher >> gtZipAccessesFor: aView [
 	<gtView>
-	| allAccesses |
-	allAccesses := self nonRootAccesses.
-	allAccesses ifNil: [ ^ aView empty ].
+	| accesses |
+	accesses := self nonRootAccesses.
+	accesses ifNil: [ ^ aView empty ].
 	^ aView columnedList
 		title: 'Zip Accesses';
 		priority: 3;
-		items: [ allAccesses ];
+		items: [ accesses ];
 		column: 'Time'
 			item:
 				[ :eachItem :eachIndex | eachItem datetime asRopedText foreground: Color gray ]
@@ -176,7 +182,7 @@ NginxAccessLogFetcher >> log [
 
 { #category : #accessing }
 NginxAccessLogFetcher >> nonRootAccesses [
-	^ self allAccesses select: [: each | each accessedURL endsWith:'zip']
+	^ self allAccesses select: [: each | (each accessedURL findString: 'zip') > 0]
 ]
 
 { #category : #accessing }
