@@ -40,15 +40,19 @@ NginxAccessLogFetcher >> agentParser [
 NginxAccessLogFetcher >> allAccesses [
 	| parser |
 	allAccesses ifNil: [
+		allAccesses := SortedCollection new.
+		allAccesses sortBlock:[ :a :b | a datetime > b datetime ].
 		self fetchAccessLog.
 		parser := self accesLogLineParser.
-		allAccesses := (self  log lines collect: [:l | 
-			NginxAccess new 
-				parser: parser;
-				log: (l,String lf);
-				parsed
-				])].
+		self  log lines collect: [:l | 
+			allAccesses add: (
+				NginxAccess new 
+					parser: parser;
+					log: (l,String lf);
+					parsed)
+				]].
 	^ allAccesses
+	
 ]
 
 { #category : #accessing }
@@ -68,6 +72,13 @@ NginxAccessLogFetcher >> allGtZipDownloads [
 NginxAccessLogFetcher >> allXdocDownloads [
 	| accesses |
 	accesses := self allAccesses select: [: each | (each accessedURL findString: '.xdoc') > 0].
+	^ accesses
+]
+
+{ #category : #accessing }
+NginxAccessLogFetcher >> allZincDownloads [
+	| accesses |
+	accesses := self allAccesses select: [: each | (each agent findString: 'Zinc') > 0].
 	^ accesses
 ]
 
@@ -197,6 +208,34 @@ NginxAccessLogFetcher >> gtXdocAccessesFor: aView [
 	accesses ifNil: [ ^ aView empty ].
 	^ aView columnedList
 		title: 'Xdoc Accesses';
+		priority: 3;
+		items: [ accesses ];
+		column: 'Time'
+			item:
+				[ :eachItem :eachIndex | eachItem datetime asRopedText foreground: Color gray ]
+			width: 170;
+		column: 'Access'
+			item: [ :eachItem :eachIndex | eachItem ]
+			text: [ :eachItem | eachItem accessedURL ];
+		column: 'IP'
+			item: [ :eachItem :eachIndex | eachItem ]
+			text: [ :eachItem | eachItem ip ] width: 100;	
+		column: 'Agent'
+			item: [ :eachItem :eachIndex | eachItem ]
+			text: [ :eachItem | eachItem agent ] width: 100;
+		column: 'Channel'
+			item: [ :eachItem :eachIndex | eachItem ]
+			text: [ :eachItem | eachItem channel ] width: 100
+]
+
+{ #category : #accessing }
+NginxAccessLogFetcher >> gtZincAccessesFor: aView [
+	<gtView>
+	| accesses |
+	accesses := self allZincDownloads collect: [:a| a parsedForce].
+	accesses ifNil: [ ^ aView empty ].
+	^ aView columnedList
+		title: 'Zinc Accesses';
 		priority: 3;
 		items: [ accesses ];
 		column: 'Time'
