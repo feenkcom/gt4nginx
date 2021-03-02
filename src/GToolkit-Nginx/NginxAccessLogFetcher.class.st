@@ -38,21 +38,21 @@ NginxAccessLogFetcher >> agentParser [
 
 { #category : #accessing }
 NginxAccessLogFetcher >> allAccesses [
-	| parser |
+	| parser sortedCollection |
 	allAccesses ifNil: [
-		allAccesses := SortedCollection new.
-		allAccesses sortBlock:[ :a :b | a datetime > b datetime ].
+		sortedCollection  := SortedCollection new.
+		sortedCollection sortBlock:[ :a :b | a datetime > b datetime ].
 		self fetchAccessLog.
 		parser := self accesLogLineParser.
 		self  log lines collect: [:l | 
-			allAccesses add: (
+			sortedCollection add: (
 				NginxAccess new 
 					parser: parser;
 					log: (l,String lf);
 					parsed)
-				]].
+				].
+		allAccesses := NginxAccessGroup new accesses: sortedCollection].
 	^ allAccesses
-	
 ]
 
 { #category : #accessing }
@@ -63,23 +63,23 @@ NginxAccessLogFetcher >> allAccesses: anArray [
 { #category : #accessing }
 NginxAccessLogFetcher >> allGtZipDownloads [
 	| accesses |
-	accesses := self allAccesses select: [: each | (each accessedURL findString: '/gt/') > 0].
+	accesses := self allAccesses accesses select: [: each | (each accessedURL findString: '/gt/') > 0].
 	accesses := accesses select: [: each | (each accessedURL findString: '.zip') > 0].
-	^ accesses
+	^ NginxAccessGroup new accesses: accesses
 ]
 
 { #category : #accessing }
 NginxAccessLogFetcher >> allXdocDownloads [
 	| accesses |
-	accesses := self allAccesses select: [: each | (each accessedURL findString: '.xdoc') > 0].
-	^ accesses
+	accesses := self allAccesses accesses select: [: each | (each accessedURL findString: '.xdoc') > 0].
+	^ NginxAccessGroup new accesses: accesses
 ]
 
 { #category : #accessing }
 NginxAccessLogFetcher >> allZincDownloads [
 	| accesses |
-	accesses := self allAccesses select: [: each | (each agent findString: 'Zinc') > 0].
-	^ accesses
+	accesses := self allAccesses accesses select: [: each | (each agent findString: 'Zinc') > 0].
+	^ NginxAccessGroup new accesses: accesses
 ]
 
 { #category : #accessing }
@@ -121,6 +121,7 @@ NginxAccessLogFetcher >> fetchAccessLog [
 	proc := (GtUnixSubprocess 
 		command: 'scp' 
 		arguments: {'-r' . (self sshServer, ':/var/log/nginx') . '.'}).
+		"arguments: { (self sshServer, ':/var/log/nginx/access.log') . './nginx/'})."
 	proc errorBlock: [ :p | self error: 'External process failed, see proc' ].
 	proc runAndWait.
 	proc stdout.
@@ -128,7 +129,8 @@ NginxAccessLogFetcher >> fetchAccessLog [
 	proc errorBlock: [ :p | self error: 'External process failed, see proc' ].
 	proc runAndWait.
 	proc stdout.
-	fileLogNames := (1 to: 14) collect:[:digit | 'nginx/access.log.', digit asString ].
+	fileLogNames := ((1 to: 14) collect:[:digit | 'nginx/access.log.', digit asString ]) asOrderedCollection.
+	fileLogNames add: 'nginx/access.log'.
 	filesContents := fileLogNames collect: [:f | f asFileReference readStreamDo: [ :stream | 
 		| result |
 		result := [stream contents ]
@@ -147,6 +149,38 @@ NginxAccessLogFetcher >> getParser [
 ]
 
 { #category : #accessing }
+NginxAccessLogFetcher >> gtAccessMetricsFor: aView [
+	<gtView>
+	| accesses all metricsDictionary lastDuration firstDuration zinc |
+	metricsDictionary := OrderedCollection new.
+	firstDuration  := DateAndTime now - allAccesses accesses last datetime. 
+	lastDuration := DateAndTime now - allAccesses accesses first datetime. 
+	zinc := self allZincDownloads.
+	all  := self allAccesses.
+	metricsDictionary add: 'Xdoc accesses' -> self allXdocDownloads.
+	metricsDictionary add: 'Gt accesses' ->  self allGtZipDownloads.
+	metricsDictionary add: 'Zinc accesses' -> zinc .
+	metricsDictionary add: 'All accesses' -> all.
+	metricsDictionary add: 'First access ' -> firstDuration.
+	metricsDictionary add: 'Last access ' -> lastDuration .
+	metricsDictionary add: 'Duration ' -> (allAccesses accesses first datetime - allAccesses accesses last  datetime).
+	^ aView columnedList
+		title: 'Metrics';
+		priority: 3;
+		items: [ metricsDictionary ];
+		column: 'Metric'
+			item:
+				[ :eachItem :eachIndex | eachItem key ]
+			width: 170;
+		column: 'Value'
+			item: [ :eachItem :eachIndex | eachItem value ]
+			text: [:eachItem :eachIndex | (eachItem value class = Duration) 
+				ifFalse: [eachItem value accesses size]
+				ifTrue: [eachItem value gtHumanReadableString] ];
+		send: [:i | i value]
+]
+
+{ #category : #accessing }
 NginxAccessLogFetcher >> gtAllAccessesFor: aView [
 	<gtView>
 	| accesses |
@@ -155,7 +189,7 @@ NginxAccessLogFetcher >> gtAllAccessesFor: aView [
 	^ aView columnedList
 		title: 'All Accesses';
 		priority: 3;
-		items: [ allAccesses ];
+		items: [ allAccesses accesses];
 		column: 'Time'
 			item:
 				[ :eachItem :eachIndex | eachItem datetime asRopedText foreground: Color gray ]
@@ -183,7 +217,7 @@ NginxAccessLogFetcher >> gtGtAccessesFor: aView [
 	^ aView columnedList
 		title: 'GT Accesses';
 		priority: 3;
-		items: [ accesses ];
+		items: [ accesses  accesses];
 		column: 'Time'
 			item:
 				[ :eachItem :eachIndex | eachItem datetime asRopedText foreground: Color gray ]
@@ -204,12 +238,12 @@ NginxAccessLogFetcher >> gtGtAccessesFor: aView [
 NginxAccessLogFetcher >> gtXdocAccessesFor: aView [
 	<gtView>
 	| accesses |
-	accesses := self allXdocDownloads collect: [:a| a parsedForce].
+	accesses := self allXdocDownloads.
 	accesses ifNil: [ ^ aView empty ].
 	^ aView columnedList
 		title: 'Xdoc Accesses';
 		priority: 3;
-		items: [ accesses ];
+		items: [ accesses accesses];
 		column: 'Time'
 			item:
 				[ :eachItem :eachIndex | eachItem datetime asRopedText foreground: Color gray ]
@@ -232,12 +266,12 @@ NginxAccessLogFetcher >> gtXdocAccessesFor: aView [
 NginxAccessLogFetcher >> gtZincAccessesFor: aView [
 	<gtView>
 	| accesses |
-	accesses := self allZincDownloads collect: [:a| a parsedForce].
+	accesses := self allZincDownloads.
 	accesses ifNil: [ ^ aView empty ].
 	^ aView columnedList
 		title: 'Zinc Accesses';
 		priority: 3;
-		items: [ accesses ];
+		items: [ accesses accesses ];
 		column: 'Time'
 			item:
 				[ :eachItem :eachIndex | eachItem datetime asRopedText foreground: Color gray ]
@@ -258,7 +292,10 @@ NginxAccessLogFetcher >> gtZincAccessesFor: aView [
 
 { #category : #accessing }
 NginxAccessLogFetcher >> ipParser [
-	^(#startOfLine asPParser, #digit asPParser plus flatten, (($. asPParser,#digit asPParser plus)) plus flatten ) flatten
+	^ ( 
+		(( '-' asPParser) |
+		(self singleIpParser, ( $, asPParser, ' ' asPParser, self singleIpParser) star)
+		)) flatten
 ]
 
 { #category : #accessing }
@@ -279,6 +316,11 @@ NginxAccessLogFetcher >> responseCodeParser [
 { #category : #accessing }
 NginxAccessLogFetcher >> responseTimeParser [
 	^ #digit asPParser plus flatten
+]
+
+{ #category : #accessing }
+NginxAccessLogFetcher >> singleIpParser [
+	^ (#digit asPParser plus flatten, (($. asPParser,#digit asPParser plus)) plus)
 ]
 
 { #category : #accessing }
