@@ -18,6 +18,21 @@ NginxAccessGroup >> accesses: aSortedList [
 ]
 
 { #category : #accessing }
+NginxAccessGroup >> add: anNginxAccess [
+	accesses add: anNginxAccess
+]
+
+{ #category : #accessing }
+NginxAccessGroup >> groupedByDate [
+	|result gr |
+	result := Dictionary new.
+	accesses do: [:each |
+		gr := result at: (each datetime asDate) ifAbsentPut: [ NginxAccessGroup new].
+		gr add: each].
+	^ NginxAccessGroupedGroup new groupDictionary: result.
+]
+
+{ #category : #accessing }
 NginxAccessGroup >> gtAllAccessesFor: aView [
 	<gtView>
 	accesses ifNil: [ ^ aView empty ].
@@ -44,4 +59,15 @@ NginxAccessGroup >> gtAllAccessesFor: aView [
 			item: [ :eachItem :eachIndex | eachItem ]
 			text: [ :eachItem | eachItem channel ]
 			width: 10
+]
+
+{ #category : #accessing }
+NginxAccessGroup >> gtByDayFor: aView [
+	<gtView>
+	^ self groupedByDate gtByDayFor: aView
+]
+
+{ #category : #accessing }
+NginxAccessGroup >> initialize [
+	accesses := OrderedCollection new.
 ]
