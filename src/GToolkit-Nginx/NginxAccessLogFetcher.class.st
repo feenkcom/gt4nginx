@@ -69,6 +69,13 @@ NginxAccessLogFetcher >> allGtZipDownloads [
 ]
 
 { #category : #accessing }
+NginxAccessLogFetcher >> allListJsonDownloads [
+	| accesses |
+	accesses := self allAccesses accesses select: [: each | (each accessedURL findString: 'list.json') > 0].
+	^ NginxAccessGroup new accesses: accesses
+]
+
+{ #category : #accessing }
 NginxAccessLogFetcher >> allXdocDownloads [
 	| accesses |
 	accesses := self allAccesses accesses select: [: each | (each accessedURL findString: '.xdoc') > 0].
@@ -158,6 +165,7 @@ NginxAccessLogFetcher >> gtAccessMetricsFor: aView [
 	zinc := self allZincDownloads.
 	all  := self allAccesses.
 	metricsDictionary add: 'Xdoc accesses' -> self allXdocDownloads.
+	metricsDictionary add: 'List Json accesses' -> self allListJsonDownloads.
 	metricsDictionary add: 'Gt accesses' ->  self allGtZipDownloads.
 	metricsDictionary add: 'Zinc accesses' -> zinc .
 	metricsDictionary add: 'All accesses' -> all.
